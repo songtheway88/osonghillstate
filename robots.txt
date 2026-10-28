@@ -1,4 +1,9 @@
+# 힐스테이트 오송레이크센트럴 robots.txt
 User-agent: *
+Allow: /
+
+# 네이버 검색로봇
+User-agent: Yeti
 Allow: /
 
 Sitemap: https://www.hillstate-osong.cloud/sitemap.xml
