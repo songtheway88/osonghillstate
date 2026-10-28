@@ -6,8 +6,8 @@
 const CONFIG = {
   // 분양 대표번호 (예: "1600-0000"). 비워두면 전화 버튼이 상담신청 폼으로 연결됩니다.
   phone: "1644-1639",
-  // 상담신청 접수 URL (Google Apps Script 웹앱, 자체 API 등). 비워두면 전화 문의 안내만 표시합니다.
-  leadEndpoint: "",
+  // 상담신청 접수 (api/submit.js → 분양천국 대시보드 접수 + 텔레그램/문자 알림)
+  leadEndpoint: "/api/submit",
 };
 
 /* ---------- 평면 데이터 (교육자료 평면 분석 장표 기준) ---------- */
@@ -307,12 +307,25 @@ function initLeadForm() {
     btn.disabled = true;
     say("접수 중입니다…", true);
     try {
-      await fetch(CONFIG.leadEndpoint, {
+      const params = new URLSearchParams(location.search);
+      const res = await fetch(CONFIG.leadEndpoint, {
         method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({ ...data, privacy: "동의", page: location.href, at: new Date().toISOString() }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: data.name,
+          phone: data.phone,
+          type: data.type,
+          purpose: data.purpose,
+          privacy: true,
+          utm_source: params.get("utm_source") || "",
+          utm_medium: params.get("utm_medium") || "",
+          utm_campaign: params.get("utm_campaign") || "",
+          utm_content: params.get("utm_content") || "",
+        }),
       });
+      const result = await res.json().catch(() => ({}));
+      if (res.status === 400 && result.error) return say(result.error);
+      if (!res.ok) throw new Error("HTTP " + res.status);
       form.reset();
       say("상담 신청이 접수되었습니다. 빠르게 연락드리겠습니다.", true);
     } catch (err) {
